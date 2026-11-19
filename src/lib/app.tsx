@@ -3,7 +3,7 @@ import type { Session as AuthSession } from '@supabase/supabase-js';
 import { supabase, SupabaseRemote, supabaseConfigured } from './supabase';
 import { LocalDB } from './db';
 import { Store } from './store';
-import { seedIfEmpty } from './seed';
+import { seedIfEmpty, syncOfficialOutline } from './seed';
 import { ensureCurrentDay } from './actions';
 import { currentDayRef } from './engine';
 import { uuid } from './ids';
@@ -64,6 +64,7 @@ export function AppProvider({ children, fallback }: { children: ReactNode; fallb
         // Pull first so a second device never re-seeds over existing cloud data.
         await store.sync();
         seedIfEmpty(store, user.name);
+        syncOfficialOutline(store);
         ensureCurrentDay(store);
         store.scheduleSync(50);
         if (cancelled) return;

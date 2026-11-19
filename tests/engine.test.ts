@@ -160,3 +160,18 @@ describe('outline parsing', () => {
     expect(p[0].title).toBe('1. Cells');
   });
 });
+
+import { OFFICIAL_OUTLINE } from '../src/data/courseOutline';
+describe('official outline (from the uploaded document)', () => {
+  it('covers exactly the 11 core courses, none empty', () => {
+    expect(Object.keys(OFFICIAL_OUTLINE).sort()).toEqual(SEED_COURSES.map((c) => c.code).sort());
+    for (const t of Object.values(OFFICIAL_OUTLINE)) expect(t.length).toBeGreaterThan(0);
+  });
+  it('matches the document topic counts', () => {
+    const n = Object.fromEntries(Object.entries(OFFICIAL_OUTLINE).map(([k, v]) => [k, v.length]));
+    expect(n).toEqual({ 'ANA 201a': 17, 'ANA 201b': 10, 'ANA 203': 15, 'ANA 205': 16, 'PHS 201': 11, 'PHS 203': 13, 'PHS 205': 16, 'BCH 201': 15, 'BCH 203': 6, 'BCH 205': 4, 'BCH 209': 7 });
+  });
+  it('keeps practical/supporting courses out', () => {
+    for (const code of ['ANA 207', 'PHS 207', 'BCH 207', 'ENT 211', 'CSS 201', 'COM 201']) expect(OFFICIAL_OUTLINE[code]).toBeUndefined();
+  });
+});

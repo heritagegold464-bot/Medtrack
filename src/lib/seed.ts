@@ -51,3 +51,31 @@ export function seedIfEmpty(store: Store, displayName: string) {
   for (const [code, topics] of Object.entries(OFFICIAL_OUTLINE)) addTopics(code, topics, null, '');
   return true;
 }
+
+/**
+ * Add any official outline topic this account does not have yet. Ids are deterministic, so this is
+ * idempotent across devices, and a topic the user deleted (soft-deleted, still present) is NOT re-added.
+ */
+export function syncOfficialOutline(store: Store): number {
+  const u = store.userId;
+  let added = 0;
+  const existing = new Set(store.allRows('syllabus_topics').map((t) => t.id));
+  for (const course of store.rows('courses')) {
+    const outline = OFFICIAL_OUTLINE[course.code];
+    if (!outline?.length) continue;
+    const walk = (topics: OutlineTopic[], parent: string | null, path: string) =>
+      topics.forEach((t, i) => {
+        const id = detId(u, `topic:${course.code}:${path}${i}`);
+        if (!existing.has(id)) {
+          store.put('syllabus_topics', {
+            id, course_id: course.id, parent_id: parent, title: t.title, is_official: true,
+            status: 'not_started', notes: '', page_ref: '', position: i,
+          } as Partial<Topic> & { id: string });
+          added++;
+        }
+        if (t.children?.length) walk(t.children, id, `${path}${i}.`);
+      });
+    walk(outline, null, '');
+  }
+  return added;
+}

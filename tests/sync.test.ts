@@ -4,7 +4,7 @@ import { LocalDB } from '../src/lib/db';
 import { NetworkError, Store, type PushResult, type Remote } from '../src/lib/store';
 import type { AnyRow, TableName } from '../src/lib/types';
 import { TABLES } from '../src/lib/types';
-import { seedIfEmpty } from '../src/lib/seed';
+import { seedIfEmpty, syncOfficialOutline } from '../src/lib/seed';
 import { closeDay, ensureCurrentDay, pauseTimer, recordOf, saveSession, sessionsOfDay, startTimer } from '../src/lib/actions';
 import { currentDayRef } from '../src/lib/engine';
 import type { ReadingSession } from '../src/lib/types';
@@ -63,6 +63,22 @@ describe('sync', () => {
     expect(a.rows('cycle_templates')).toHaveLength(11);
     expect(a.rows('reading_sessions').every((s) => s.status === 'pending')).toBe(true);
     expect(a.rows('syllabus_topics').every((t) => t.status === 'not_started')).toBe(true);
+  });
+
+  it('seeds the official outline: 130 official topics, all not started, no duplicates on re-run or second device', async () => {
+    const a = await device(server);
+    seedIfEmpty(a, 'S');
+    expect(a.rows('syllabus_topics')).toHaveLength(130);
+    expect(a.rows('syllabus_topics').every((t) => t.is_official && t.status === 'not_started')).toBe(true);
+    expect(syncOfficialOutline(a)).toBe(0);
+    ensureCurrentDay(a); await a.sync();
+    const b = await device(server); await b.sync();
+    expect(syncOfficialOutline(b)).toBe(0);
+    expect(b.rows('syllabus_topics')).toHaveLength(130);
+    // a topic the user deleted is not resurrected
+    const t = a.rows('syllabus_topics')[0]; a.softDelete('syllabus_topics', t.id);
+    expect(syncOfficialOutline(a)).toBe(0);
+    expect(a.rows('syllabus_topics')).toHaveLength(129);
   });
 
   it('syncs to a second device (acceptance 2) without duplicating seeds', async () => {

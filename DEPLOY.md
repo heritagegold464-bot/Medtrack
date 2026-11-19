@@ -25,7 +25,10 @@ npx web-push generate-vapid-keys
 Without these, reminders still fire while MEDTRACK is open, and Settings says so honestly.
 
 ## 4. Course outline
-The outline was not supplied, so every course starts with **0 tracked topics**. Paste it per course (Courses → course → Import outline) or fill `src/data/courseOutline.ts` before a new account is created.
+The 11 core courses are pre-loaded with their **130 official topics**, transcribed verbatim from the uploaded
+"200 Level First Semester Course Contents" document (`src/data/courseOutline.ts`). Every topic starts as "not started".
+Existing accounts receive any missing official topics on next load (a topic you deleted is never re-added).
+Practical and supporting courses (ANA 207, PHS 207, BCH 207, ENT 211, CSS 201, COM, MHD) are intentionally excluded.
 
 ## Tests
 `npm test` — engine rules (cycle progression, progress math) and the sync/conflict layer against an in-memory fake server.
