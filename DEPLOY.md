@@ -2,13 +2,13 @@
 
 ## 1. Supabase
 1. Create a project. Run `supabase/migrations/0001_init.sql` in the SQL editor (or `supabase db push`).
-2. **Auth → Providers → Google**: enable, paste a Google OAuth client ID/secret (Google Cloud Console → OAuth client, redirect URI = the callback URL Supabase shows).
+2. **Sign-in**: email + password works out of the box (Auth → Providers → Email). Optional Google: **Auth → Providers → Google**: enable, paste a Google OAuth client ID/secret (Google Cloud Console → OAuth client, redirect URI = the callback URL Supabase shows).
 3. **Auth → URL configuration**: set Site URL and add your production URL (and `http://localhost:5173`) to redirect URLs.
 4. Settings → API: copy the project URL and **anon** key. Never use the service-role key in the frontend.
 
 ## 2. Frontend
 ```
-cp .env.example .env   # fill VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY
+cp .env.example .env   # set VITE_GOOGLE_AUTH=1 only if you configured Google   # fill VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY
 npm ci && npm test && npm run build
 ```
 Deploy `dist/` to Vercel/Netlify/Cloudflare Pages (SPA rewrite is already in `vercel.json` / `public/_redirects`) and set the same two env vars there.

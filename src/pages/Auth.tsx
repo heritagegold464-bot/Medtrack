@@ -17,22 +17,63 @@ export function Loading() {
   return <Shell><p role="status" className="text-sm text-ink-500">Loading your records…</p></Shell>;
 }
 
+const GOOGLE_ENABLED = import.meta.env.VITE_GOOGLE_AUTH === '1';
+
 export function Login() {
+  const [mode, setMode] = useState<'signin' | 'signup'>('signin');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [err, setErr] = useState('');
+  const [info, setInfo] = useState('');
   const [busy, setBusy] = useState(false);
-  const go = async () => {
+
+  const google = async () => {
     setBusy(true); setErr('');
     const { error } = await supabase!.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin, queryParams: { prompt: 'select_account' } } });
     if (error) { setErr(error.message); setBusy(false); }
   };
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErr(''); setInfo('');
+    if (password.length < 8) return setErr('Use a password of at least 8 characters.');
+    setBusy(true);
+    try {
+      if (mode === 'signin') {
+        const { error } = await supabase!.auth.signInWithPassword({ email: email.trim(), password });
+        if (error) setErr(error.message);
+      } else {
+        const { data, error } = await supabase!.auth.signUp({ email: email.trim(), password, options: { emailRedirectTo: window.location.origin } });
+        if (error) setErr(error.message);
+        else if (!data.session) setInfo('Account created. Check your email and tap the confirmation link, then sign in here.');
+      }
+    } catch (x) {
+      setErr(x instanceof Error ? x.message : 'Could not reach the server. Check your connection.');
+    } finally { setBusy(false); }
+  };
+
   return (
     <Shell>
-      <p className="mb-5 text-sm text-ink-700">Track your 11-day reading cycle and your real syllabus progress. Your records follow you across devices.</p>
-      <button className="btn-primary w-full" disabled={busy} onClick={() => void go()}>
-        <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#fff" d="M44.5 20H24v8.5h11.8C34.7 33.9 30.1 37 24 37c-7.2 0-13-5.8-13-13s5.8-13 13-13c3.1 0 5.9 1.1 8.1 2.9l6-6C34.6 5.1 29.6 3 24 3 12.4 3 3 12.4 3 24s9.4 21 21 21c10.5 0 20-7.6 20-21 0-1.3-.2-2.7-.5-4z" /></svg>
-        Continue with Google
+      <p className="mb-4 text-sm text-ink-700">Track your 11-day reading cycle and your real syllabus progress. Your records follow you across devices.</p>
+      <form onSubmit={submit} className="space-y-3 text-left">
+        <div>
+          <label className="label" htmlFor="em">Email</label>
+          <input id="em" className="input" type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+        </div>
+        <div>
+          <label className="label" htmlFor="pw">Password</label>
+          <input id="pw" className="input" type="password" autoComplete={mode === 'signin' ? 'current-password' : 'new-password'} required minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} />
+        </div>
+        <button className="btn-primary w-full" disabled={busy} type="submit">{mode === 'signin' ? 'Sign in' : 'Create account'}</button>
+      </form>
+      <button className="mt-3 text-sm font-semibold text-navy-700" onClick={() => { setMode(mode === 'signin' ? 'signup' : 'signin'); setErr(''); setInfo(''); }}>
+        {mode === 'signin' ? 'First time? Create your account' : 'Already have an account? Sign in'}
       </button>
+      {GOOGLE_ENABLED && (
+        <button className="btn-ghost mt-3 w-full" disabled={busy} onClick={() => void google()}>Continue with Google</button>
+      )}
       {err && <p role="alert" className="mt-3 text-sm text-bad-700">{err}</p>}
+      {info && <p role="status" className="mt-3 text-sm text-ok-700">{info}</p>}
     </Shell>
   );
 }
